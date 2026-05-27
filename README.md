@@ -1,10 +1,11 @@
 <div align="center">
   
-# 📦 Smart Inventory Intelligence Platform
+# 📦 Smart Inventory SaaS Platform
+### Intelligent Multi-Tenant Inventory Ecosystem
 
-An enterprise-grade, modern, and intelligent inventory management system built for small shops, warehouses, and wholesalers. Features multi-location tracking, predictive stock-out ML analysis, robust API, and a stunning Glassmorphism UI.
+An enterprise-grade, modern, and intelligent multi-tenant inventory management SaaS platform built on a scalable **Database-Per-Tenant** architecture. Features multi-location tracking, predictive stock-out ML analysis, centralized platform auditing, robust role-based access control, a unified HTML template mailer, dynamic Excel catalogs import, and a stunning Glassmorphism UI.
 
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -15,218 +16,170 @@ An enterprise-grade, modern, and intelligent inventory management system built f
 
 </div>
 
-
 ---
 
 ## 📑 Table of Contents
 
 - [Overview](#-overview)
 - [Key Features](#-key-features)
-- [Architecture & Tech Stack](#-architecture--tech-stack)
-  - [Frontend Ecosystem](#frontend-ecosystem)
-  - [Backend Ecosystem](#backend-ecosystem)
-  - [Machine Learning Component](#machine-learning-component)
-- [System Architecture Details](#-system-architecture-details)
-- [Database Schema (MariaDB)](#-database-schema-mariadb)
+- [Multi-Tenant SaaS Architecture](#-multi-tenant-saas-architecture)
+- [Central Super Admin Portal](#-central-super-admin-portal)
+- [Unified Email Service](#-unified-email-service)
+- [Excel Catalog Import Engine](#-excel-catalog-import-engine)
+- [Tech Stack](#-tech-stack)
+- [Database Architectures (Central vs. Tenant)](#-database-architectures-central-vs-tenant)
 - [Directory Structure](#-directory-structure)
-- [Prerequisites](#-prerequisites)
 - [Local Development Setup](#-local-development-setup)
-  - [1. Database Configuration](#1-database-configuration)
-  - [2. Node.js Backend API](#2-nodejs-backend-api)
-  - [3. Python ML Microservice](#3-python-ml-microservice)
-  - [4. React Frontend Web Application](#4-react-frontend-web-application)
 - [API Documentation](#-api-documentation)
-  - [Authentication Flow](#authentication-flow)
-  - [Core Endpoints](#core-endpoints)
-- [Machine Learning Overview](#-machine-learning-overview)
-- [User Roles & Permissions](#-user-roles--permissions)
+- [User Roles & Permissions (RBAC)](#-user-roles--permissions-rbac)
 - [UI / UX Design Principles](#-ui--ux-design-principles)
 - [Security Features](#-security-features)
-- [Deployment Strategy](#-deployment-strategy)
-- [Future Enhancements](#-future-enhancements)
-- [Contributing](#-contributing)
 - [License](#-license)
-
 
 ---
 
 ## 🚀 Overview
 
-The **Smart Inventory Intelligence Platform** transcends standard CRUD applications by introducing automated workflows, predictive analytics, and enterprise-level tracking capabilities previously reserved for large corporations. 
+The **Smart Inventory SaaS Platform** is a multi-tenant software-as-a-service solution that enables businesses to manage physical inventory across multiple locations. Using a high-isolation **Database-Per-Tenant** pattern, the platform dynamically resolves and routes traffic to isolated MariaDB/TiDB tenant instances while exposing a central Super Admin control board.
 
-Built with scalability, security, and user experience at the forefront, this platform serves as the central nervous system for businesses dealing with physical goods, enabling them to transition from reactive inventory management to proactive, data-driven supply chain optimization.
-
+The application bridges Express APIs, an isolated Python FastAPI machine learning microservice for demand forecasting and anomaly detection, and a high-performance React client designed with glassmorphic aesthetic details.
 
 ---
 
 ## 🌟 Key Features
 
-### 1. Robust Multi-Location Inventory Engine
-- **Global Visibility:** Monitor real-time stock levels across all your warehouse and shop locations from a single pane of glass.
-- **Stock Movements:** Log all `Stock In`, `Stock Out`, `Manual Adjustment`, and inter-location `Transfer` events.
-- **Audit Trails:** Comprehensive logging of who moved what, when, and exactly why, ensuring total accountability.
+### 1. High-Isolation Multi-Tenancy
+- **Database-per-Tenant:** Complete physical and logical data isolation, preventing cross-tenant leakage.
+- **Dynamic Context Routing:** Automatic connection pool resolution using `AsyncLocalStorage` and connection caching.
+- **Automated Provisioning:** Dynamically spins up, runs schema migrations, seeds default roles, and onboard tenants on-the-fly.
 
-### 2. Intelligent Purchasing & Supplier Management
-- **Purchase Orders (PO):** End-to-end PO lifecycle management (`DRAFT`, `PENDING`, `APPROVED`, `RECEIVED`).
-- **Partial Receiving:** Support for receiving partial shipments, automatically keeping backorders tracked.
-- **Supplier Ledger:** Manage supplier contact information and view historical orders tied to each vendor.
+### 2. Multi-Location Inventory Engine
+- **Global Stock Visibility:** Real-time stock aggregates across all shop shelves and warehouses.
+- **Movement Ledgers:** Atomic transactions for stock-in, stock-out, manual adjustments, and inter-location transfers.
+- **Audit Trails:** Un-editable history tracking who performed which adjustments.
 
-### 3. Predictive AI & Advanced ML Analytics
-- **Machine Learning Integration:** Uses historical sales velocity combined with statistical models (Linear Regression/Moving Averages) built in Python/Scikit-Learn/Statsmodels.
-- **Stock-Out Prevention:** Predicts exactly *when* an item will run out of stock based on current depletion rates.
-- **Smart Reorder Quantity (EOQ):** Algorithmically calculates the Economic Order Quantity considering both holding and ordering costs.
-- **Demand Forecasting:** Utilizes Statsmodels (Holt-Winters) for accurate 7-day, 14-day, and 30-day demand time-series forecasting.
-- **Product Velocity Classification:** Employs KMeans clustering to categorize inventory into Fast, Medium, and Slow-moving segments.
-- **Dead Stock Detection:** Uses Isolation Forest anomaly detection to identify capital tied up in stagnant inventory.
-- **Smart Purchase Generator:** One-click automated Purchase Order generation based on ML reorder recommendations.
+### 3. Intelligent Purchasing & Supplier Management
+- **Purchase Orders (PO):** Multi-stage order workflows (`DRAFT` ➔ `PENDING` ➔ `APPROVED` ➔ `RECEIVED`).
+- **Partial Receiving:** Automatically logs partial shipments and splits pending backorders.
+- **Automated Mail Logs:** Complete audit trail of outgoing POs dispatched to vendor networks.
 
-### 4. Advanced Entity Management
-- **Hierarchical Catalogs:** Organize products logically via robust categories structure.
-- **Complex Pricing Models:** Track both cost prices and variable selling margins globally.
-- **Detailed SKUs:** (Stock Keeping Units) Ensure no duplicate tracking issues.
-- **Safety Nets:** Definable minimum Reorder Levels per item to trigger alerts.
+### 4. Scoped User Management
+- **Invites Console:** Dynamic invitations matching company branding, complete with automatic password generation.
+- **Status Controls:** Ability to suspend or reactivate staff accounts instantly.
+- **Granular RBAC:** Permissions structure securing routes by role hierarchies.
 
-### 5. Enterprise Grade Security
-- **Role-Based Access Control (RBAC):** Strict permissions dividing system capability across `owner`, `manager`, `staff`, and `warehouse` operator roles.
-- **JWT Stateless Auth:** Fast, secure, scalable JSON Web Token based authentication.
-- **Encrypted Credentials:** Salted and hashed passwords utilizing industry-standard bcrypt.
+### 5. Excel Catalog Import Engine
+- **Bulk Imports:** Upload `.xlsx`, `.xls`, or `.csv` sheets to batch-populate inventory catalogs.
+- **Dynamic Relations Mapping:** Non-existent categories or suppliers are resolved and created on-the-fly.
+- **Interactive UI Logs:** Drag-and-drop file upload with live success stats and detailed warning lines for SKU collisions.
 
-### 6. Automated Supplier Email Logging
-- **Lifecycle Tracking:** Automatically logs the sending attempt, dispatch timestamp, and delivery success status of purchase order emails sent to suppliers.
-- **Detailed Audit Trail:** Stores sender (`From`), recipient (`To`), `Subject`, and full HTML `email body` to keep a complete communication ledger.
-- **Resilient Log States:** Tracks logs across all integrations (Resend API, Brevo API, SMTP, or local test fallback accounts).
-
+### 6. Predictive AI & Demand Forecasting
+- **Stock-Out Warnings:** Regression analysis predicting depletion velocity and stock exhaustion days.
+- **EOQ Calculation:** Computes Economic Order Quantity balancing holding and ordering costs.
+- **Prophet/Exponential Smoothing Demand curves:** 7, 14, and 30-day time-series forecasting.
+- **Dead Stock Anomalies:** Isolation Forest algorithms flagging capital trapped in stagnant items.
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🗺️ Multi-Tenant SaaS Architecture
 
-The platform is designed around a modern Microservices-adjacent architecture. The Node.js Core Backend acts as the orchestrator and central truth, the Python service acts as an isolated heavy-compute node, and the React frontend provides the visualization layer.
+The platform handles scalability and security using a modular routing pipeline:
 
-### Frontend Ecosystem
-- **Framework Flow:** React 18, utilizing functional components and hooks pattern.
-- **Bundler:** Vite – chosen for incredibly fast Hot Module Replacement (HMR) and optimized production builds.
-- **Routing:** React Router DOM (v6) for seamless client-side single page app transitions and protected route guards.
-- **Styling Matrix:** Tailwind CSS – enabling rapid, inline utility styling ensuring visual consistency.
-- **Animation Engine:** Framer Motion – responsible for all complex layout transitions, gesture detections, and the premium "glassmorphism" micro-interactions that make the app feel alive.
-- **Icons & Data Viz:** Lucide React for consistent, crisp SVG iconography, and scalable abstractions for charting elements.
-- **API Client:** Axios, configured with central interceptors to automatically inject authorization headers.
+```text
+       [React Client SPA]
+               │
+               │ (Request + Header: X-Tenant-Id)
+               ▼
+     [Express Core Gateway]
+               │
+               ▼
+  [Tenant Resolver Middleware] ────(Lookup metadata)────► [Central Master DB]
+               │
+               ├─(Request pool)───► [Tenant DB Connection Manager]
+               │                                   │
+               ▼                                   ▼ (Cache pool / Init)
+  [Business Route Controller] ─────────────────────┤
+               │                                   ▼
+               └─(Attach pool connection)───► [Tenant Database]
+                                                   │
+                                                   ▼
+                                     [Python FastAPI ML Container]
+```
 
-### Backend Ecosystem
-- **Runtime:** Node.js (v18+)
-- **Server Framework:** Express.js – lightweight handler for RESTful routes and middleware pipelines.
-- **Database:** MariaDB – High performance relational database handling complex table joins and atomic transactions.
-- **Driver:** `mariadb` Node package, using Connection Pooling for concurrent request handling.
-- **Authentication:** `jsonwebtoken` (JWT) and `bcryptjs`.
-- **Environment:** `dotenv` for secure 12-factor app configuration.
-
-### Machine Learning Component
-- **Runtime:** Python 3.9+
-- **API Server:** FastAPI – lightning-fast ASGI python framework handling the inference endpoints. Served via Uvicorn.
-- **Data Engineering:** Pandas & NumPy for matrix operations and historical array normalization.
-- **Modeling Algorithms:**
-  - Scikit-Learn (Linear Regression) for basic stock-out predictions.
-  - Statsmodels (Exponential Smoothing) for robust time-series demand forecasting.
-  - Scikit-Learn (KMeans) for product cluster velocity classification.
-  - Scikit-Learn (Isolation Forest) for anomalous dead stock detection.
-- **Validation:** Pydantic for strict incoming REST payload typing.
-
+1. **Context Initialization:** When a client request hits the Express server, `tenantResolver` extracts `X-Tenant-Id`.
+2. **Registry Lookup:** The middleware checks the local cache or queries the Central Database to resolve the tenant's database name (`tenant_<tenant_id>`).
+3. **Pool Allocation:** The connection manager (`tenantDbManager.js`) returns an existing pool from its memory cache or spins up a new pool dynamically, scheduling an idle-reaper to prune inactive connections after 15 minutes.
+4. **Execution Bound:** Downstream controllers execution is wrapped inside a scoped environment using `AsyncLocalStorage` and attached to `req.db`.
 
 ---
 
-## 🗺️ System Architecture Details
+## 👑 Central Super Admin Portal
 
-The typical data flow through the architecture looks like this:
-
-1. **User Request:** The React SPA attempts to view the *Dashboard*.
-2. **Gateway:** Axios intercepts the request, attaches the user's encoded JWT, and fires an XHR request to the Node `/api/analytics/dashboard` endpoint.
-3. **Middleware Intercept:** Express router `authMiddleware` validates the JWT signature against the server's `JWT_SECRET`. If valid, it unpacks the user payload and role, attaching it to `req.user`.
-4. **Relational Query:** The Controller opens a connection pool thread to MariaDB and runs a complex query isolating active inventory alerts and capital sums.
-5. **Microservice Hand-off:** For predictive graphs, the Node server acts as a client, constructing historical sales arrays and issuing an internal system `.post` to the Python FastAPI container (`/predict/stock-out`).
-6. **Inference:** Python crunches the dataset in memory utilizing NumPy, generates a regression trendline via Scikit-Learn, and responds with JSON integers.
-7. **Resolution:** Node aggregates the DB and ML data, and responds to the frontend.
-8. **Render:** Framer Motion animates the DOM entry of the returned KPI statistics within the Glassmorphism UI components.
-
+The Super Admin interface is accessible via `/admin` and isolates platform administration from standard workspace views:
+- **Global Metrics Dashboard:** Tracks aggregate registered tenants, status spreads, and projected platform MRR.
+- **Tenant Management Directory:** Add new tenants (triggering SQL migrations and database creation), suspend workspaces, or reactivate accounts.
+- **Centralized Auditing Stream:** A single platform-wide log viewer containing database mutation records with interactive before/after JSON inspectors.
 
 ---
 
-## 🗄️ Database Schema (MariaDB)
+## 📧 Unified Email Service
 
-The relational schema is deeply connected. Referential integrity is strictly enforced.
+The backend contains a consolidated, template-driven email service in [mailer.js]:
+- **Abstracted Transports:** Dynamically routes emails through Resend API, Brevo, or NodeMailer SMTP, with a local Ethereal/sandbox fallback.
+- **Glassmorphic HTML Templates:** Shared styling system rendering responsive cards for `WELCOME_EMAIL`, `INVITE_USER`, and `PURCHASE_ORDER` templates.
+- **BullMQ Background Queues:** Leverages BullMQ job managers with Redis; gracefully falls back to a synchronous, in-memory worker queue when Redis is offline.
 
-### `USERS` Table
-Houses the personnel profiles and their encrypted credentials.
-- `id` (INT PK, Auto Increment)
-- `name` (VARCHAR)
-- `email` (VARCHAR, Unique index)
-- `password_hash` (VARCHAR)
-- `role` (ENUM: 'owner','manager','staff','warehouse')
+---
 
-### `CATEGORIES` Table
-Logical grouping of product items.
-- `id` (INT PK)
-- `name` (VARCHAR, Indexed for searches)
-- `description` (TEXT)
+## 📥 Excel Catalog Import Engine
 
-### `SUPPLIERS` Table
-Data for vendors and B2B partners.
-- `id` (INT PK)
-- `name`, `email`, `phone`, `address`
+Secured for Owners and Managers, the catalog importer parses spreadsheets with high reliability:
+- **Stream Context Binding:** Multer's file uploads operate outside standard AsyncLocalStorage boundaries. The parser directly maps operations to `req.db.getConnection()` to prevent transactional drift to the central database.
+- **Flexible Headers Parser:** Case-insensitive, whitespace-ignoring string matcher supporting multiple variations (e.g., `SKU`, `Product SKU`, `Code`).
+- **Dry-run Collision Logs:** Inserts valid rows while catching duplicates or format errors, returning detailed report counts and row-by-row warnings without rolling back the entire sheet.
 
-### `PRODUCTS` Table
-The core catalog item definitions. Connects heavily to foreign systems.
-- `id` (INT PK)
-- `name` (VARCHAR)
-- `sku` (VARCHAR, Unique Index)
-- `category_id` (FK -> CATEGORIES.id)
-- `supplier_id` (FK -> SUPPLIERS.id)
-- `cost_price` (DECIMAL 10,2)
-- `selling_price` (DECIMAL 10,2)
-- `ordering_cost` (DECIMAL 10,2) - Used for EOQ Optimization
-- `holding_cost` (DECIMAL 10,2) - Used for EOQ Optimization
-- `reorder_level` (INT)
-- `track_expiry` (BOOLEAN) - Support for perishable goods tracking
+---
 
-### `LOCATIONS` Table
-Physical or logical delineations of inventory (Shop A, Warehouse 1, Shelf B).
-- `id` (INT PK)
-- `name` (VARCHAR)
+## 🏗️ Tech Stack
 
-### `INVENTORY` Table
-*CRITICAL TABLE:* Maintains the many-to-many state of what product is where.
-- `id` (INT PK)
-- `product_id` (FK -> PRODUCTS.id)
-- `location_id` (FK -> LOCATIONS.id)
-- `quantity` (INT)
-*Note:* Employs a Composite Unique Index on `(product_id, location_id)` to prevent duplication. Must be mutated atomically.
+### Frontend
+- **React 18 & Vite:** Lightning-fast HMR client bundle.
+- **React Router DOM (v6):** Protected client routes and route-guarding logic.
+- **Tailwind CSS:** Consistent dark-mode utility-first styling.
+- **Framer Motion:** Smooth slide-up animations, spring physics, and glassmorphic card depth.
 
-### `STOCK_MOVEMENTS` Table
-Immutable ledger of all quantity mutations for auditing.
-- `id` (INT PK)
-- `product_id` (FK)
-- `location_id` (FK)
-- `type` (ENUM: 'IN','OUT','TRANSFER','ADJUSTMENT')
-- `quantity` (INT)
-- `reference_type` (VARCHAR e.g. 'PO', 'MANUAL_SALE')
-- `reference_id` (INT)
-- `performed_by` (FK -> USERS.id)
+### Core Backend
+- **Node.js (v18+) & Express:** RESTful request handling.
+- **MariaDB Driver:** Native connection pools and transaction support.
+- **Multer:** Buffered memory-storage parser for file uploads.
+- **xlsx (SheetJS):** Tabular parsing of Excel workbook sheets.
 
-### `PURCHASE_ORDERS` & `PURCHASE_ORDER_ITEMS`
-Handles the external acquisition of stock.
-- Bound by strict state machines preventing items from being received twice.
-- Automatically creates `STOCK_MOVEMENTS` (Type: 'IN') when the state flips to `RECEIVED`.
+### Python ML Service
+- **FastAPI & Uvicorn:** Async REST API served on port 8000.
+- **Scikit-Learn:** Linear regression (depletion trend) and Isolation Forests (dead stock).
+- **Statsmodels:** Holt-Winters exponential smoothing curves.
+- **Pandas & NumPy:** Tabular operations and normalization.
 
-### `EMAIL_LOGS` Table
-Tracks communication logs for all outgoing supplier emails.
-- `id` (INT PK, Auto Increment)
-- `from_email` (VARCHAR)
-- `to_email` (VARCHAR)
-- `subject` (VARCHAR)
-- `body` (LONGTEXT) - Stores the full HTML email body
-- `created_at` (TIMESTAMP) - Timestamp when the email dispatch was initiated
-- `sent_at` (TIMESTAMP) - Timestamp when the dispatch finished (succeeded or failed)
-- `success` (BOOLEAN) - Status of whether the email was successfully sent
+---
 
+## 🗄️ Database Architectures (Central vs. Tenant)
+
+### Central Registry DB Schema
+- **`companies`**: Tenant listings, active schema databases, and operating status.
+- **`plans`**: Subscription billing tiers (`Basic`, `Professional`, `Enterprise`) and system threshold limits (max users, max locations, max products).
+- **`subscriptions`**: Dynamic subscription states and trial timestamps.
+- **`platform_users`**: Administrative accounts (Super Admins).
+- **`platform_audit_logs`**: System audit trails for write events across all workspaces.
+
+### Tenant Scoped DB Schema (Created per Tenant)
+- **`roles` / `permissions` / `role_permissions`**: Scoped RBAC matrices.
+- **`users`**: Team profiles and salted bcrypt hashes.
+- **`PRODUCTS`**: Inventory catalog (includes `ordering_cost` and `holding_cost` for predictive EOQ).
+- **`LOCATIONS`**: Warehouse and store locations.
+- **`INVENTORY`**: Quantities matrix mapped to products and locations.
+- **`STOCK_MOVEMENTS`**: Immutable movements ledger.
+- **`PURCHASE_ORDERS` / `PURCHASE_ORDER_ITEMS`**: B2B supply logs.
+- **`SALES_HISTORY`**: Sales velocities used for predictive modeling.
 
 ---
 
@@ -234,24 +187,32 @@ Tracks communication logs for all outgoing supplier emails.
 
 ```text
 /
-├── backend/                       # Express API Application
-│   ├── .env                       # Backend Environment Variables
-│   ├── db.js                      # DB Connection Pool Config
-│   ├── server.js                  # Express App Entry & Routing
-│   ├── setupDb.js                 # Automation script for DB initialisation
-│   ├── schema.sql                 # Complete MariaDB Schema dump
-│   ├── controllers/               # Route Logic / Controllers
-│   │   ├── analyticsController.js # Dashboard & ML bridging logic
-│   │   ├── authController.js      # Login and JWT Generation
-│   │   ├── categoriesController.js
-│   │   ├── inventoryController.js # Current stock aggregation
-│   │   ├── locationsController.js 
-│   │   ├── productsController.js  
-│   │   ├── purchaseOrdersController.js # Complex PO business logic
-│   │   └── stockMovementsController.js # Atomic stock movement ledger
-│   ├── middlewares/               
-│   │   └── authMiddleware.js      # JWT & RBAC interceptors
-│   ├── routes/                    # Express Router definitions
+├── backend/                       # Multi-Tenant Express Application
+│   ├── .env                       # Environment Configurations (Port 4000)
+│   ├── db.js                      # Central & Tenant DB Proxy connection pool
+│   ├── server.js                  # App Entry & Route Definitions
+│   ├── schema.sql                 # SQL tables script for isolated tenant database
+│   ├── setupCentralDb.js          # Initialization script for SaaS Master database
+│   ├── setupDb.js                 # Automation script for single-tenant databases
+│   ├── migrate_to_multitenant.js  # Migration script to convert database contents
+│   ├── controllers/               # Controllers handling business logic
+│   │   ├── adminController.js     # Platform metrics & tenant provisioning
+│   │   ├── analyticsController.js # Dashboard aggregates & ML microservice gateway
+│   │   ├── authController.js      # Tenant logins & password checks
+│   │   ├── categoriesController.js# Category management endpoints
+│   │   ├── inventoryController.js # Location-specific stock levels
+│   │   ├── locationsController.js # Warehouse/shelf storage records
+│   │   ├── productsController.js  # Product CRUD & Excel Catalog Imports
+│   │   ├── purchaseOrdersController.js # B2B acquisition & status flow
+│   │   ├── stockMovementsController.js # Transactional adjustments & movement history
+│   │   └── usersController.js     # Tenant invites, delete, & status toggle
+│   ├── jobs/                      # Background Queue Workers
+│   │   └── worker.js              # BullMQ worker executing mail queue items
+│   ├── middlewares/               # Request filters & validation
+│   │   ├── authMiddleware.js      # Token parsing & claim authorization checks
+│   │   └── tenantResolver.js      # X-Tenant-Id middleware resolver
+│   ├── routes/                    # Express Router path mappings
+│   │   ├── admin.js
 │   │   ├── analytics.js
 │   │   ├── auth.js
 │   │   ├── categories.js
@@ -259,298 +220,176 @@ Tracks communication logs for all outgoing supplier emails.
 │   │   ├── locations.js
 │   │   ├── products.js
 │   │   ├── purchase-orders.js
-│   │   └── stock-movements.js
-│   └── utils/                     # Helper Utilities
-│       └── mailer.js              # Email Dispatch & Logging Integration
+│   │   ├── stock-movements.js
+│   │   └── users.js
+│   ├── services/                  # SaaS Pipeline Services
+│   │   └── onboardingService.js   # Provisioning (DB, RBAC tables, welcome mail)
+│   └── utils/                     # Shared platform helpers
+│       ├── auditLogger.js         # Writes database mutations to central audit logs
+│       ├── context.js             # AsyncLocalStorage wrapper
+│       ├── mailer.js              # Centralized SMTP & HTTP mail templates
+│       ├── queue.js               # BullMQ setup with sync fallback
+│       └── tenantDbManager.js     # Dynamic connection pools manager
 │
-├── frontend/                      # React SPA Application
-│   ├── index.html                 # HTML Entry
+├── frontend/                      # React Single Page Application (Vite)
 │   ├── package.json               
 │   ├── postcss.config.js          
-│   ├── tailwind.config.js         # Theme & Color scheme configurations
-│   ├── vite.config.js             # React bundler config
-│   ├── public/                    # Static Assets
+│   ├── tailwind.config.js         # Theme configs
+│   ├── vite.config.js             # Bundler settings
 │   └── src/
-│       ├── App.jsx                # Router & Protected Route Guarding
-│       ├── api.js                 # Axios Singleton interceptor
-│       ├── index.css              # Tailwind Base & Global CSS
-│       ├── main.jsx               # React DOM Entry
-│       ├── components/            
-│       │   └── Layout.jsx         # Global UI Wrapper (Sidebar, Header, Framer Motion)
-│       └── pages/                 # Full View Components
-│           ├── Dashboard.jsx      # Metrics Summary View
-│           ├── Inventory.jsx      # Multi-location tracking panel
-│           ├── Login.jsx          # Auth Entry UI
-│           ├── Products.jsx       # Catalog Grid
-│           └── PurchaseOrders.jsx # PO tracking and receiving UX
+│       ├── App.jsx                # Route guards and router config
+│       ├── api.js                 # Axios instance with header interceptor
+│       ├── index.css              # Custom styles
+│       ├── main.jsx               # Entrypoint
+│       ├── components/            # Layout shells
+│       │   ├── AdminLayout.jsx    # Sidebar configuration for platform admins
+│       │   └── Layout.jsx         # Sidebar configuration for tenant team members
+│       └── pages/                 # Visual screens
+│           ├── AdminDashboard.jsx # Central SaaS analytics and provisioning
+│           ├── AdminLogin.jsx     # Platform portal login
+│           ├── Dashboard.jsx      # Metrics overview with ML predictions
+│           ├── Inventory.jsx      # Multi-location stock counts
+│           ├── Login.jsx          # Tenant workspace login portal
+│           ├── Products.jsx       # Catalog Grid & ImportModal Integration
+│           ├── PurchaseOrders.jsx # PO draft, pending, and partial receiving
+│           └── Users.jsx          # Employees Directory & Invite modal
 │
-└── ml-service/                    # Python Intelligence Microservice
-    ├── requirements.txt           # Python dependency tree
-    └── main.py                    # FastAPI entry, Models, & Regression Logic
+└── ml-service/                    # Python FastAPI Intelligence Container
+    ├── requirements.txt           # Scikit-Learn, Statsmodels, Pandas, etc.
+    └── main.py                    # Predictive routes & modeling logic
 ```
-
-
----
-
-## 🛠️ Prerequisites
-
-Before you can build the Smart Inventory platform locally, ensure you have the following global dependencies installed:
-
-1. **Node.js**: v18.0.0 or higher.
-2. **NPM or Yarn**: Node package managers.
-3. **Python**: v3.9 or higher (Ensure `pip` is available).
-4. **MariaDB**: v10.6 or higher (MySQL 8.0+ is broadly compatible).
-
 
 ---
 
 ## 💻 Local Development Setup
 
-To run the entire system locally, you will need to operate three separate terminal processes.
+To boot the entire SaaS platform locally, run the services on their designated ports:
 
-### 1. Database Configuration
+### 1. Central Database Boostrap
+Ensure your local MariaDB instance is running. Create a `.env` in the `/backend` folder matching your local database parameters, then run:
 
-You must have a MariaDB instance running locally (default port 3306). 
-
-If you are using Docker you could spin one up quickly:
-```bash
-docker run -p 3306:3306 --name inventory-db -e MARIADB_ROOT_PASSWORD=password -d mariadb:latest
-```
-
-Navigate to the node backend:
 ```bash
 cd backend
-```
-
-Create or modify your `.env` file to match your MariaDB credentials:
-```env
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_secure_db_password
-DB_NAME=smart_inventory
-JWT_SECRET=generate_something_extremely_secure_here
-PORT=5000
-ML_SERVICE_URL=http://localhost:8000
-```
-
-Run the automated bootstrapping script. This connects to your database instance, creates the `smart_inventory` database schema, builds all the tables, and creates necessary associations.
-```bash
-node setupDb.js
-```
-*(You should see "Database and tables created successfully" in the console).*
-
-### 2. Node.js Backend API
-
-Once the database is constructed, we start the API Router.
-Still in the `/backend` directory:
-
-```bash
-# Install node packages
 npm install
 
-# Start the development server (uses nodemon if available for hot-reloads)
-npm run dev
-# OR native execution
-node server.js
+# Initialize the central platform tables
+node setupCentralDb.js
+
+# Initialize a default isolated tenant ('primary') and migrate legacy data
+node migrate_to_multitenant.js
 ```
-The Express server will boot up and bind to `http://localhost:5000`.
 
-### 3. Python ML Microservice
+### 2. Launch Backend API
+Still in the `/backend` directory:
+```bash
+npm start
+```
+The server will run on `http://localhost:4000` (port defined in your `.env`).
 
-Open a **new terminal tab**. Navigate to the ML service directory.
-
+### 3. Launch Python ML Service
+Open a new terminal tab:
 ```bash
 cd ml-service
-```
-
-Determine your virtual environment and build it. Keeping Python dependencies isolated is critical for ML stacks.
-
-```bash
-# Initialize a new Virtual Environment named 'venv'
 python -m venv venv
 
-# Activate it (WINDOWS OS)
+# Windows OS activation
 .\venv\Scripts\activate
-
-# Activate it (MAC/LINUX OS)
+# macOS/Linux activation
 source venv/bin/activate
-```
 
-Install the scientific computing and server packages.
-```bash
-pip install fastapi uvicorn scikit-learn pandas numpy pydantic python-dotenv mariadb
-```
-
-Start the ASGI server:
-```bash
-# Runs the app Object located inside main.py with hot-reloading
+pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
-FastAPI will now be running on `http://localhost:8000`. The automated interactive swagger documentation is instantly available at `http://localhost:8000/docs`.
+FastAPI Swagger docs will mount on `http://localhost:8000/docs`.
 
-### 4. React Frontend Web Application
-
-Open a **third terminal tab**. Navigate into the frontend ecosystem.
-
+### 4. Launch React Client
+Open a third terminal tab:
 ```bash
 cd frontend
-```
-
-Configure your environment settings. Ensure the `.env` (or `.env.local` for Vite) contains the correct API mapping:
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-Install React ecosystem dependencies and launch the dev server:
-```bash
 npm install
 npm run dev
 ```
-Vite will instantly boot on `http://localhost:5173`. Open this URL in your browser to interact with the full system!
-
+Navigate to `http://localhost:5173`. To access the Central Admin dashboard, navigate to `http://localhost:5173/admin/login`.
 
 ---
 
 ## 🔗 API Documentation
 
-The Node API follows robust RESTful conventions. Responses are JSON serialized. 
+All API requests (except platform admin logins and health checks) are tenant-scoped and require the `X-Tenant-Id` header to resolve the database pool. Most routes also require a valid JWT token passed in the `Authorization: Bearer <token>` header.
 
-### Authentication Flow
-The API is generally locked down securely.
+### 1. Authentication & Tenant Resolution
+- **`POST /api/auth/login`**: Authenticate a tenant user. Accepts `{ email, password }`. Resolves tenant DB using `X-Tenant-Id` and returns a JWT containing user claims and RBAC permissions.
+- **`POST /api/auth/register`**: Registers a new tenant and provisions their initial company owner account.
+- **`POST /api/auth/admin-login`**: Authenticate a platform Super Admin against the central database.
 
-- `POST /api/auth/register` : Accepts `{ name, email, password, role }`. Hashes the password utilizing bcrypt with 10 salt rounds and creates a new system `USER`. *(Note: in production, registration endpoints should be either locked to admin token holders or require email verification workflows, to avoid public role escalation attacks).*
-- `POST /api/auth/login` : Accepts `{ email, password }`. Generates a signed `JWT` payload structured as `{ id, email, role }` valid for 24h.
+### 2. Platform Super Admin Controls (`/api/admin`)
+- **`GET /api/admin/metrics`**: Computes overall platform analytics (Total active tenants, subscription MRR, status split).
+- **`GET /api/admin/tenants`**: Lists all onboarded companies, database mappings, and subscription statuses.
+- **`POST /api/admin/tenants`**: Dynamic tenant database creation, RBAC schema execution, and email invitation dispatch.
+- **`PUT /api/admin/tenants/:id/status`**: Toggle tenant company status (`ACTIVE` ➔ `SUSPENDED`).
+- **`GET /api/admin/logs`**: Audit logs stream reflecting write operations across the entire platform.
 
-To authenticate future requests, append the token in the headers:
-```http
-Authorization: Bearer <your_jwt_string>
-```
+### 3. Tenant User Management (`/api/users`)
+*Secured for: `owner` and `manager` roles.*
+- **`GET /api/users`**: List all team members within the tenant company along with their roles.
+- **`POST /api/users`**: Invite a new colleague. Generates a hashed temporary password, creates the user, and queues a customized welcome/invitation email.
+- **`PUT /api/users/:id/status`**: Toggle user status (`ACTIVE` / `SUSPENDED`). Prevents self-suspension.
+- **`DELETE /api/users/:id`**: Permanent removal of an employee account from the tenant database. Prevents self-deletion.
 
-### Core Endpoints
+### 4. Product Catalog (`/api/products`)
+- **`GET /api/products`**: Fetch the complete product list with resolved category and supplier names.
+- **`POST /api/products`**: *`[RBAC: owner, manager]`* Create a new catalog item. Requires `{ name, sku, cost_price, selling_price }`.
+- **`PUT /api/products/:id`**: *`[RBAC: owner, manager]`* Update product details, safety stock thresholds, and track options.
+- **`DELETE /api/products/:id`**: *`[RBAC: owner, manager]`* Remove a product from the database catalog.
+- **`POST /api/products/import`**: *`[RBAC: owner, manager]`* Upload an Excel/CSV catalog file. Parses headers, resolves categories/suppliers on-the-fly, validates SKUs, and runs transactional batch inserts, returning individual row warnings for duplicates.
 
-*Note: Assume all below endpoints require a valid JWT header.*
+### 5. Warehouse & Stock Tracking (`/api/inventory` & `/api/stock-movements`)
+- **`GET /api/inventory`**: Displays location-specific quantities of all products (shops vs. warehouses).
+- **`GET /api/stock-movements`**: Complete audit logs of all physical stock movements.
+- **`POST /api/stock-movements`**: *`[RBAC: owner, manager, warehouse]`* Record a new stock transaction. Accepts `{ product_id, location_id, type ('IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT'), quantity, reference }`. Updates the stock table atomically.
 
-**Products (`/api/products`)**
-- `GET /` : Returns full catalog with joined category and supplier names.
-- `POST /` : `[RBAC: owner, manager]` Creates a new un-instanced global catalog item. Requires `sku`, `name`, `cost_price`, `selling_price`.
-- `DELETE /:id`: `[RBAC: owner, manager]` Hard deletes an item from global catalogs.
+### 6. B2B Purchase Orders (`/api/purchase-orders`)
+- **`GET /api/purchase-orders`**: Retrieve B2B order lists.
+- **`POST /api/purchase-orders`**: *`[RBAC: owner, manager]`* Generate a Purchase Order and automatically email a responsive item details list to the supplier's address.
 
-**Inventory (`/api/inventory`)**
-- `GET /` : Returns granular locations mapping of product counts. Effectively answers "How many of SKU #123 are physically in Warehouse A vs Shop B?". Resolves joined readable strings.
-
-**Stock Movements (`/api/stock-movements`)**
-- `GET /` : Returns chronological audit ledger.
-- `POST /` : `[RBAC: owner, manager, warehouse_operator]` Crucial endpoint. Accepts `{ product_id, location_id, type (IN/OUT/ADJUSTMENT/TRANSFER), quantity, reference }`. 
-  - **Logic Interceptor:** Initiates MariaDB locking transactions. It finds the current tally for that product/location matrix. It accurately adds or subtracts the requested payload. It commits the `STOCK_MOVEMENTS` log and updates `INVENTORY` synchronously to avoid database race conditions.
-
-**Purchase Orders (`/api/purchase-orders`)**
-- `GET /` : Retrieves the PO pipeline.
-- `POST /` : `[RBAC: owner, manager]` Initiates a multi-step transaction creating a primary `PURCHASE_ORDER` row tied to a supplier, and sequentially injects `PURCHASE_ORDER_ITEMS` referencing global products.
-
-**Intelligence Analytics (`/api/analytics`)**
-- `GET /dashboard` : Performs high-intensity aggregate queries across the whole database determining Total Capital Valuation of stocked items, aggregating counts of Low Stock Alerts (comparing actual vs. reorder limits per product), and tracking overall Pending workflows.
-- `GET /predictions/:product_id` : Acts as an API Gateway proxy. Contacts the internal network Python Microservice with synthesized sales vectors, returning the ML algorithmic predictions directly to the requesting client dashboard smoothly.
-
-
----
-
-## 🤖 Machine Learning Overview
-
-The ML service (`ml-service/main.py`) acts as the forecasting brains. Because inventory data is highly numeric and tabular, we utilize Scikit-Learn structures and Statsmodels over heavy deep-learning frameworks (which would add unnecessary overhead).
-
-- **Current Implementation Strategy:**
-  - **Stock-Out & EOQ (`/predict/stock-out`):** Evaluates daily sale velocity trend and calculates the optimal Economic Order Quantity based on holding and ordering costs.
-  - **Demand Forecasting (`/forecast/demand`):** Employs the `statsmodels` library to extrapolate 7, 14, and 30-day time series demand curves.
-  - **Velocity Classification (`/classify/products`):** Uses `KMeans` clustering (`n_clusters=3`) to segment products into Fast, Medium, and Slow moving based on turnover rate and sales variance.
-  - **Dead Stock Detection (`/detect/dead-stock`):** Feeds current inventory holding vs days-since-last-sale into an `IsolationForest` to flag true stagnant capital vs standard slow-movers.
-  
-This service is stateless, inherently horizontally scalable via Docker or Kubernetes when prediction traffic increases, separating ML scaling bottlenecks away from primary CRUD operations.
-
+### 7. Predictive ML Analytics (`/api/analytics`)
+- **`GET /api/analytics/dashboard`**: Overall dashboard telemetry (Totals, pending logs, low-stock metrics).
+- **`GET /api/analytics/predictions/:product_id`**: Stock depletion rate, stock-out ETA (days remaining), and Economic Order Quantity (EOQ).
+- **`GET /api/analytics/forecast/:product_id`**: Demand time-series forecast (FastAPI Holt-Winters).
+- **`GET /api/analytics/classifications`**: Fast, Medium, and Slow moving segments (FastAPI KMeans Clustering).
+- **`GET /api/analytics/dead-stock`**: Stagnant inventory alerts (FastAPI Isolation Forest).
+- **`GET /api/analytics/expiry-risk`**: Expiry risk warnings for batch-tracked items.
 
 ---
 
-## 🛡️ User Roles & Permissions
+## 🛡️ User Roles & Permissions (RBAC)
 
-The platform includes hard-coded RBAC middleware. The roles enforce operational security on physical inventory manipulation.
-
-1. **`owner`**: God-mode. Complete read, write, execution, deletion rights across the system footprint, accessing analytics and managing user generation.
-2. **`manager`**: Operational control. Can view comprehensive catalogs, approve Purchase Orders, define categories, dictate global transfer movements, and manage the underlying location parameters.
-3. **`warehouse`**: Execution capabilities. Restricted view of financial figures (they see quantity, not necessarily cost valuation totals), but possesses rights to execute physical `STOCK IN` and `STOCK OUT` operational movements natively on the ledger.
-4. **`staff`**: Sales terminal restrictions. Read privileges to view where stock is across locations to inform customers, capability to mark out a sale (`STOCK OUT`).
-
+Tenant databases are pre-seeded with four default roles containing specific permission claims:
+1. **`owner`**: Full administrative workspace permissions, user directory management, and audit inspection.
+2. **`manager`**: Operational control (Purchase orders creation, locations, suppliers, catalog CRUD) except user management.
+3. **`warehouse`**: Restricted view of financial figures; access to locations, and stock movement logs.
+4. **`staff`**: View products and execute `STOCK OUT` movements.
 
 ---
 
 ## 🎨 UI / UX Design Principles
 
-A massive focus during development was applied to preventing the "ugly enterprise" software trope. The User Interface utilizes specific high-end patterns to feel comparable to Premium SaaS platforms.
-
-- **Theme Palette:** Deep slate and dark mode foundations (`slate-900`/`slate-800`), ensuring long analytical sessions cause minimal optical fatigue. The high contrast allows color-coded KPI badges (Red=Warning, Emerald=Good, Amber=Pending) to pop and draw eye attention intuitively.
-- **Glassmorphism:** Leveraging Tailwind's `/80` opacity variables and `backdrop-blur-md` matrices to create depth stacking. The primary sidebar and top-bars blur the animated ambient background mesh gradients behind them.
-- **Micro-Interactions (Framer Motion):** 
-  - Elements do not simply load; they `fade and slide-up` sequentially generating organic build-in rhythms.
-  - Sidebar routing elements utilize `layoutId` physics boxes to trace and follow mouse focus fluidly.
-  - Core CTA (Call to Action) buttons employ custom spring matrices on `whileHover` and `whileTap` states to offer profound haptic feedback on digital click.
-- **Form Geometry:** Complete abandonment of sharp 90-degree boxes in favor of `.rounded-xl` and `.rounded-2xl` structural geometry across input structures, rendering a softer, cleaner form interface. 
-- **Skeleton Ready:** Core UI frames inherently load their architecture instantly via component isolation, ensuring the user immediately sees the page structure while Axios resolves heavy backend joins and hydrates the layout.
-
+- **Harmonious Palette:** Custom deep slate background colors (`#0f172a`/`#1e293b`) prevent eye fatigue.
+- **Layout Animations:** Sequential slide-ups using Framer Motion provide organic page loading.
+- **Haptic Spring CTAs:** Scale and tap springs on buttons give satisfying click feedback.
+- **Skeleton Screens:** Render layout frames instantly while resolving database requests in the background.
 
 ---
 
 ## 🔐 Security Features
 
-1. **SQL Injection Armor:** Prepared statements are strictly utilized across all MariaDB Driver queries (e.g. `.query('SELECT * FROM TABLE WHERE id = ?', [id])`), destroying injection probability.
-2. **No Storage of Defaults:** Passwords are mathematically converted to randomized one-way hashes via `.genSalt(10)` before resting in memory.
-3. **Stateless Scale Auth:** No server-side session memory. The Node box can restart infinite times flawlessly because JWT validations happen independently via secret key verification of incoming payload signatures.
-4. **CORS Sanitization:** Cross-Origin Request filters active by default within `express` middleware setups preventing cross-domain hijacking routines.
-
-
----
-
-## ☁️ Deployment Strategy
-
-The application is structurally prepped for standard cloud matrices.
-
-**Frontend (Vercel / Netlify / Cloudflare Pages)** 
-- Static Site Generators / Single Page Apps are optimized here.
-- Execute `npm run build` in the Vite `/frontend` environment, dropping the resulting `dist` folder natively to any CDNs edge.
-
-**Backend Node API (Render / Railway / Heroku / AWS EC2)**
-- Containerized or native Node deployment. Ensure `process.env.PORT` dynamically binds to the host's port requirements.
-
-**Python Microservice (Render / DigitalOcean App Platform)**
-- Isolated process execution allowing scale thresholds to be tied to CPU spikes associated with Inference matrix calculations natively separate from Node.
-
-**Database (AWS RDS / PlanetScale / Managed Cloud)**
-- Abstract the database architecture out of the VM spaces and onto a managed resilient relational layer preventing localized crashes from deleting core ledger logs.
-
-
----
-
-## 🔭 Future Enhancements
-
-While comprehensive, modern architectures are never statically finished. Key integrations slated for upcoming version releases:
-- **Websocket Realtime Protocol:** Exchanging standard Axios pulls with `socket.io` to ensure Live-Dashboard metric ticks across all warehouse operators synchronously upon physical item scans natively.
-- **Barcode & RFID Pipeline:** Re-engineering frontend Search fields to natively intercept USB & Bluetooth peripheral input events (Barcode lasers) triggering instant SKU database mutations.
-- **Advanced Recurrent Neural Networks (RNN):** Maturing the FastAPI container from simple Scikit-Learn linear regression into deeply convoluted `Tensorflow/LSTMs` for extremely complex seasonal curve forecasting capable of anticipating holiday volume swings implicitly.
-- **CSV & Excel Export Layer:** Utilizing libraries to dump structured DataFrames of the dashboard matrices for accountant use.
-
-
----
-
-## 🤝 Contributing
-
-Contributions are heavily encouraged and welcomed to build out complex implementations of the roadmap targets above.
-
-1. Fork the Project Repository.
-2. Create your Feature / Hotfix Branch (`git checkout -b feature/AmazingImplementation`).
-3. Commit your precise changes (`git commit -m 'Add some AmazingImplementation'`).
-4. Push to the isolated Branch (`git push origin feature/AmazingImplementation`).
-5. Open a robust Pull Request outlining exactly the methodology taken, highlighting any schema modifications explicitly.
-
+1. **SQL Injection Defense:** Prepared queries with strict parameterized inputs.
+2. **Bcrypt Hash Checks:** One-way salted hashes (10 rounds) secure passwords.
+3. **Stateless JWT Claims:** Secure authentication using short-lived cryptographically signed tokens.
+4. **Tenant Isolation Guards:** Strict database-per-tenant isolation enforced at the routing level.
 
 ---
 
 ## 📜 License
 
-Distributed under the MIT License. See `LICENSE.txt` for more full information and operational compliance.
+Distributed under the MIT License. See `LICENSE.txt` for details.
