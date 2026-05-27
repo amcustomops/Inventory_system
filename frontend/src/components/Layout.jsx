@@ -96,6 +96,7 @@ const Layout = () => {
 
     if (user?.role === 'owner' || user?.role === 'manager') {
         navItems.push({ name: 'Suppliers', path: '/suppliers', icon: Users });
+        navItems.push({ name: 'Users', path: '/users', icon: Users });
     }
 
     return (

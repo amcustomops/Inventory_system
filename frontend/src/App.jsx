@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Inventory from './pages/Inventory';
 import PurchaseOrders from './pages/PurchaseOrders';
 import Suppliers from './pages/Suppliers';
+import Users from './pages/Users';
 import AdminLogin from './pages/AdminLogin';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
@@ -44,6 +45,7 @@ function App() {
             <Route path="inventory" element={<Inventory />} />
             <Route path="purchase-orders" element={<PurchaseOrders />} />
             <Route path="suppliers" element={<Suppliers />} />
+            <Route path="users" element={<Users />} />
           </Route>
         </Routes>
       </BrowserRouter>
