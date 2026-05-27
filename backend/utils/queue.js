@@ -57,39 +57,13 @@ async function executeJobLocally(name, data) {
     // Execute job logic asynchronously on next tick to avoid blocking
     setImmediate(async () => {
         try {
+            const { sendPlatformEmail } = require('./mailer');
             if (name === 'send-welcome-email') {
-                const nodemailer = require('nodemailer');
-                const mailerTransporter = nodemailer.createTransport({
-                    host: process.env.EMAIL_HOST,
-                    port: process.env.EMAIL_PORT,
-                    auth: {
-                        user: process.env.EMAIL_USER,
-                        pass: process.env.EMAIL_PASS
-                    }
-                });
-
-                const emailFrom = process.env.EMAIL_FROM || 'no-reply@smartinventory.com';
-                const subject = `Welcome to ${data.companyName} - Smart Inventory SaaS`;
-                
-                const html = `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                        <h2 style="color: #4f46e5; text-align: center;">Welcome to Smart Inventory Platform</h2>
-                        <p>Hello <strong>${data.name}</strong>,</p>
-                        <p>Your organization, <strong>${data.companyName}</strong>, has been successfully onboarded.</p>
-                        <p>Here are your credentials to log in:</p>
-                        <p><strong>Login URL:</strong> <a href="${data.loginUrl}">${data.loginUrl}</a></p>
-                        <p><strong>Username:</strong> ${data.email}</p>
-                        <p><strong>Temporary Password:</strong> <code>${data.temporaryPassword}</code></p>
-                    </div>
-                `;
-
-                await mailerTransporter.sendMail({
-                    from: `"Smart Inventory System" <${emailFrom}>`,
-                    to: data.email,
-                    subject: subject,
-                    html: html
-                });
+                await sendPlatformEmail(data.email, 'WELCOME_EMAIL', data);
                 console.log(`[Mock Queue] Welcome email successfully sent to ${data.email} via Mock Queue.`);
+            } else if (name === 'invite-user') {
+                await sendPlatformEmail(data.email, 'INVITE_USER', data);
+                console.log(`[Mock Queue] Invite user email successfully sent to ${data.email} via Mock Queue.`);
             }
         } catch (e) {
             console.error('[Mock Queue] Job execution failed:', e.message);

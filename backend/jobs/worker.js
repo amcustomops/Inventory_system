@@ -59,73 +59,13 @@ connection.on('connect', () => {
         console.log(`[Queue Worker] Processing job #${job.id} type: ${job.name}`);
         
         if (job.name === 'send-welcome-email') {
-            const { email, name, companyName, temporaryPassword, loginUrl } = job.data;
-            const subject = `Welcome to ${companyName} - Smart Inventory SaaS`;
-            
-            const html = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-                    <h2 style="color: #4f46e5; text-align: center;">Welcome to Smart Inventory Platform</h2>
-                    <p>Hello <strong>${name}</strong>,</p>
-                    <p>Your organization, <strong>${companyName}</strong>, has been successfully onboarded onto our platform.</p>
-                    <p>Here are your credentials to log in and get started:</p>
-                    
-                    <table style="width: 100%; margin: 20px 0; border-collapse: collapse; background-color: #f8fafc; border-radius: 6px;">
-                        <tr>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Login URL:</strong></td>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><a href="${loginUrl}" style="color: #4f46e5;">${loginUrl}</a></td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;"><strong>Registered Email:</strong></td>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${email}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px;"><strong>Temporary Password:</strong></td>
-                            <td style="padding: 10px;"><code>${temporaryPassword}</code></td>
-                        </tr>
-                    </table>
-
-                    <p style="color: #ef4444; font-weight: bold;">Important: For security reasons, please reset your password immediately after logging in.</p>
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-                    <p style="font-size: 12px; color: #64748b; text-align: center;">This is an automated system email. Do not reply directly.</p>
-                </div>
-            `;
-
-            const resendApiKey = process.env.RESEND_API_KEY;
-            const emailFrom = process.env.EMAIL_FROM || 'no-reply@smartinventory.com';
-            
-            let sent = false;
-
-            try {
-                if (resendApiKey) {
-                    console.log('[Queue Worker] Sending via Resend HTTP API...');
-                    await axios.post('https://api.resend.com/emails', {
-                        from: `"Smart Inventory System" <${emailFrom}>`,
-                        to: [email],
-                        subject: subject,
-                        html: html
-                    }, {
-                        headers: {
-                            'Authorization': `Bearer ${resendApiKey}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    sent = true;
-                } else {
-                    console.log('[Queue Worker] Sending via SMTP...');
-                    const transporter = await getTransporter();
-                    await transporter.sendMail({
-                        from: `"Smart Inventory System" <${emailFrom}>`,
-                        to: email,
-                        subject: subject,
-                        html: html
-                    });
-                    sent = true;
-                }
-                console.log(`[Queue Worker] Welcome email sent successfully to ${email}.`);
-            } catch (sendErr) {
-                console.error(`[Queue Worker] Failed to send email via standard routes:`, sendErr.message);
-                throw sendErr; // Fail job to trigger retry logic
-            }
+            const { sendPlatformEmail } = require('../utils/mailer');
+            await sendPlatformEmail(job.data.email, 'WELCOME_EMAIL', job.data);
+            console.log(`[Queue Worker] Welcome email dispatched successfully to ${job.data.email}.`);
+        } else if (job.name === 'invite-user') {
+            const { sendPlatformEmail } = require('../utils/mailer');
+            await sendPlatformEmail(job.data.email, 'INVITE_USER', job.data);
+            console.log(`[Queue Worker] Invite user email dispatched successfully to ${job.data.email}.`);
         }
     }, {
         connection,
