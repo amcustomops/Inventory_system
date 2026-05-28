@@ -6,8 +6,8 @@ exports.getDashboardStats = async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        const lowStockRows = await conn.query(`
-      SELECT COUNT(*) as count 
+        const lowStockItemsRows = await conn.query(`
+      SELECT p.id, p.name, p.sku, i.quantity, p.reorder_level
       FROM INVENTORY i
       JOIN PRODUCTS p ON i.product_id = p.id
       WHERE i.quantity <= p.reorder_level
@@ -40,8 +40,17 @@ exports.getDashboardStats = async (req, res) => {
             value: Number(row.value)
         }));
 
+        const lowStockItems = lowStockItemsRows.map(row => ({
+            id: row.id.toString(),
+            name: row.name,
+            sku: row.sku,
+            quantity: Number(row.quantity),
+            reorderLevel: Number(row.reorder_level)
+        }));
+
         res.json({
-            lowStockCount: Number(lowStockRows[0].count),
+            lowStockCount: lowStockItems.length,
+            lowStockItems: lowStockItems,
             totalValue: Number(totalValueRows[0].total_value || 0),
             pendingPOs: Number(pendingPORows[0].count),
             inventoryData: formattedInventoryData

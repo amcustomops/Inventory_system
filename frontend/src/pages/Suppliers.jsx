@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Users, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Users, AlertTriangle, Upload, FileSpreadsheet, XCircle } from 'lucide-react';
 import api from '../api';
 import SupplierModal from '../components/SupplierModal';
 
@@ -20,6 +20,8 @@ const Suppliers = () => {
 
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [supplierToDelete, setSupplierToDelete] = useState(null);
+
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -102,15 +104,26 @@ const Suppliers = () => {
                     <p className="text-sm text-slate-400">Manage your supplier network and contact information.</p>
                 </div>
                 {canEdit && (
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleOpenAddModal}
-                        className="flex items-center bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20 transition-colors"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Supplier
-                    </motion.button>
+                    <div className="flex gap-3">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="flex items-center bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/50 px-4 py-2 rounded-xl text-sm font-medium shadow-md transition-colors"
+                        >
+                            <Upload className="w-4 h-4 mr-2 text-slate-400" />
+                            Import Excel
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleOpenAddModal}
+                            className="flex items-center bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20 transition-colors"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Supplier
+                        </motion.button>
+                    </div>
                 )}
             </div>
 
@@ -223,6 +236,243 @@ const Suppliers = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Custom Import Modal */}
+            <AnimatePresence>
+                {isImportModalOpen && (
+                    <ImportModal 
+                        isOpen={isImportModalOpen} 
+                        onClose={() => setIsImportModalOpen(false)} 
+                        fetchData={fetchData}
+                    />
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+// -------------------------------------------------------------
+// Excel Suppliers Import Component
+// -------------------------------------------------------------
+const ImportModal = ({ isOpen, onClose, fetchData }) => {
+    const [file, setFile] = useState(null);
+    const [importing, setImporting] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [importResult, setImportResult] = useState(null);
+    const [dragActive, setDragActive] = useState(false);
+
+    const handleDrag = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {
+            setDragActive(true);
+        } else if (e.type === "dragleave") {
+            setDragActive(false);
+        }
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(false);
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            validateAndSetFile(e.dataTransfer.files[0]);
+        }
+    };
+
+    const handleChange = (e) => {
+        e.preventDefault();
+        if (e.target.files && e.target.files[0]) {
+            validateAndSetFile(e.target.files[0]);
+        }
+    };
+
+    const validateAndSetFile = (selectedFile) => {
+        setUploadError("");
+        setImportResult(null);
+        const name = selectedFile.name.toLowerCase();
+        if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+            setFile(selectedFile);
+        } else {
+            setUploadError("Please upload an Excel (.xlsx, .xls) or CSV (.csv) file.");
+        }
+    };
+
+    const downloadTemplate = () => {
+        const headers = ['Supplier Name', 'Email', 'Phone', 'Address'];
+        const sampleRow = ['TechSource Ltd', 'contact@techsource.com', '+91 98765 43210', '123 Tech Park, Bangalore'];
+        
+        const csvContent = "\uFEFF" + [headers.join(','), sampleRow.join(',')].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "supplier_import_template.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImportSubmit = async (e) => {
+        e.preventDefault();
+        if (!file) return;
+
+        setImporting(true);
+        setUploadError("");
+        setImportResult(null);
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            const res = await api.post("/suppliers/import", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
+            setImportResult(res.data);
+            setFile(null);
+            fetchData();
+        } catch (err) {
+            console.error("Import error:", err);
+            setUploadError(err.response?.data?.message || "Failed to process the suppliers import.");
+        } finally {
+            setImporting(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="glass-card w-full max-w-lg p-6 sm:p-8 overflow-hidden flex flex-col my-8 max-h-[90vh]"
+            >
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-white">Import Suppliers</h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors font-bold text-xl">&times;</button>
+                </div>
+
+                <div className="overflow-y-auto pr-1 space-y-5 flex-1">
+                    {/* Information on Required Fields */}
+                    <div className="bg-slate-800/40 border border-slate-700/50 p-4 rounded-xl text-xs space-y-2">
+                        <h4 className="font-semibold text-slate-350 flex items-center uppercase tracking-wider text-[10px]">
+                            Required Fields Guide
+                        </h4>
+                        <div className="text-slate-400 text-xs">
+                            <span className="text-red-400 font-bold mr-1">*</span>
+                            <strong className="text-slate-200">Supplier Name:</strong> Display name of the vendor/supplier.
+                        </div>
+                        <div className="pt-2 border-t border-slate-700/30 text-[11px] text-slate-500">
+                            <strong className="text-slate-400">Optional:</strong> Email, Phone, Address.
+                        </div>
+                    </div>
+
+                    {/* Download Template Button */}
+                    <div className="flex items-center justify-between bg-slate-800/20 border border-slate-800/50 rounded-xl p-3 text-sm">
+                        <span className="text-slate-400">Need a sample format?</span>
+                        <button
+                            type="button"
+                            onClick={downloadTemplate}
+                            className="flex items-center text-blue-400 hover:text-blue-300 font-semibold transition-colors text-xs"
+                        >
+                            <FileSpreadsheet className="w-4 h-4 mr-1.5 text-blue-450" />
+                            Download Template
+                        </button>
+                    </div>
+
+                    {/* Drag & Drop Upload Zone */}
+                    <form onSubmit={handleImportSubmit} className="space-y-4">
+                        <div
+                            onDragEnter={handleDrag}
+                            onDragOver={handleDrag}
+                            onDragLeave={handleDrag}
+                            onDrop={handleDrop}
+                            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center transition-all ${
+                                dragActive 
+                                    ? "border-blue-500 bg-blue-500/5" 
+                                    : file 
+                                        ? "border-emerald-500/50 bg-emerald-500/5" 
+                                        : "border-slate-700/80 hover:border-slate-600 bg-slate-800/20"
+                            }`}
+                        >
+                            <Upload className={`w-10 h-10 mb-3 ${file ? "text-emerald-450" : "text-slate-500"}`} />
+                            {file ? (
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-emerald-450 truncate max-w-[250px]">{file.name}</p>
+                                    <p className="text-xs text-slate-500 mt-1">{(file.size / 1024).toFixed(1)} KB</p>
+                                </div>
+                            ) : (
+                                <div className="text-center">
+                                    <p className="text-sm font-medium text-slate-300">Drag and drop file here, or <label className="text-blue-400 hover:text-blue-300 cursor-pointer font-semibold underline">browse<input type="file" onChange={handleChange} className="hidden" accept=".xlsx,.xls,.csv" /></label></p>
+                                    <p className="text-xs text-slate-500 mt-2">Supports Excel (.xlsx, .xls) and CSV (.csv)</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {uploadError && (
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-xl text-xs flex items-center">
+                                <XCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+                                <span>{uploadError}</span>
+                            </div>
+                        )}
+
+                        {/* Submit Actions */}
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-350 rounded-xl text-sm font-semibold transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={importing || !file}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/20 transition-colors disabled:opacity-50"
+                            >
+                                {importing ? "Processing..." : "Start Import"}
+                            </button>
+                        </div>
+                    </form>
+
+                    {/* Import Summary */}
+                    {importResult && (
+                        <div className="border-t border-slate-700/50 pt-4 space-y-3">
+                            <h4 className="text-sm font-semibold text-white">Import Summary</h4>
+                            <div className="grid grid-cols-2 gap-3 text-center">
+                                <div className="bg-emerald-500/10 border border-emerald-500/25 p-3 rounded-xl">
+                                    <span className="block text-xl font-bold text-emerald-450">{importResult.successCount}</span>
+                                    <span className="text-xs text-slate-450">Imported/Updated</span>
+                                </div>
+                                <div className={`p-3 rounded-xl border ${
+                                    importResult.errorCount > 0 
+                                        ? "bg-yellow-500/10 border-yellow-500/25" 
+                                        : "bg-slate-800/30 border-slate-800"
+                                }`}>
+                                    <span className={`block text-xl font-bold ${importResult.errorCount > 0 ? "text-yellow-500" : "text-slate-450"}`}>{importResult.errorCount}</span>
+                                    <span className="text-xs text-slate-450">Skipped/Warnings</span>
+                                </div>
+                            </div>
+
+                            {importResult.errors && importResult.errors.length > 0 && (
+                                <div className="space-y-2">
+                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Warning Logs ({importResult.errors.length})</span>
+                                    <div className="bg-slate-900/60 border border-slate-800 rounded-xl max-h-40 overflow-y-auto p-3 text-xs space-y-1.5 font-mono divide-y divide-slate-800/40">
+                                        {importResult.errors.map((err, i) => (
+                                            <div key={i} className={`pt-1.5 first:pt-0 text-slate-400 flex gap-2`}>
+                                                <span className="text-yellow-500 font-bold shrink-0">[Row {err.row}]</span>
+                                                <span className="text-slate-300">{err.reason}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </motion.div>
         </div>
     );
 };

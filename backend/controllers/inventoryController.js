@@ -1,4 +1,6 @@
 const pool = require('../db');
+const xlsx = require('xlsx');
+const { logToCentral } = require('../utils/auditLogger');
 
 exports.getInventory = async (req, res) => {
     let conn;
@@ -184,3 +186,170 @@ exports.adjustStock = async (req, res) => {
         if (conn) conn.release();
     }
 };
+
+exports.importInventory = async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'No spreadsheet file uploaded' });
+    }
+
+    let conn;
+    try {
+        const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = xlsx.utils.sheet_to_json(sheet);
+
+        if (rows.length === 0) {
+            return res.status(400).json({ message: 'Excel file is empty' });
+        }
+
+        conn = await req.db.getConnection();
+        await conn.beginTransaction();
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        const findValue = (row, keys) => {
+            const rowKeys = Object.keys(row);
+            const foundKey = rowKeys.find(rk => 
+                keys.some(k => rk.toLowerCase().replace(/[\s_-]/g, '') === k.toLowerCase().replace(/[\s_-]/g, ''))
+            );
+            return foundKey ? row[foundKey] : undefined;
+        };
+
+        for (let idx = 0; idx < rows.length; idx++) {
+            const row = rows[idx];
+            const rowNumber = idx + 2;
+
+            const prodIdVal = findValue(row, ['product_id', 'productid', 'productId']);
+            const locIdVal = findValue(row, ['location_id', 'locationid', 'locationId']);
+            const qtyVal = findValue(row, ['quantity', 'qty', 'amount']);
+
+            // Validate Product ID presence
+            if (prodIdVal === undefined || prodIdVal === null || String(prodIdVal).trim() === '') {
+                errorCount++;
+                errors.push({ row: rowNumber, productId: 'N/A', reason: 'Product ID is required' });
+                continue;
+            }
+            const productId = parseInt(prodIdVal, 10);
+            if (isNaN(productId)) {
+                errorCount++;
+                errors.push({ row: rowNumber, productId: prodIdVal, reason: 'Product ID must be an integer' });
+                continue;
+            }
+
+            // Validate Location ID presence
+            if (locIdVal === undefined || locIdVal === null || String(locIdVal).trim() === '') {
+                errorCount++;
+                errors.push({ row: rowNumber, productId, reason: 'Location ID is required' });
+                continue;
+            }
+            const locationId = parseInt(locIdVal, 10);
+            if (isNaN(locationId)) {
+                errorCount++;
+                errors.push({ row: rowNumber, productId, reason: 'Location ID must be an integer' });
+                continue;
+            }
+
+            // Validate Quantity
+            const qty = parseInt(qtyVal, 10);
+            if (isNaN(qty) || qty < 0) {
+                errorCount++;
+                errors.push({ row: rowNumber, productId, reason: 'Quantity must be a non-negative integer' });
+                continue;
+            }
+
+            // Resolve/Validate Product ID
+            const prodRows = await conn.query('SELECT id FROM PRODUCTS WHERE id = ?', [productId]);
+            if (prodRows.length === 0) {
+                errorCount++;
+                errors.push({ row: rowNumber, productId, reason: `Product ID '${productId}' does not exist` });
+                continue;
+            }
+
+            // Resolve/Validate Location ID
+            const locRows = await conn.query('SELECT id FROM LOCATIONS WHERE id = ?', [locationId]);
+            if (locRows.length === 0) {
+                errorCount++;
+                errors.push({ row: rowNumber, productId, reason: `Location ID '${locationId}' does not exist` });
+                continue;
+            }
+
+            // Fetch current stock from INVENTORY
+            const invRows = await conn.query(
+                'SELECT id, quantity FROM INVENTORY WHERE product_id = ? AND location_id = ? FOR UPDATE',
+                [productId, locationId]
+            );
+
+            let currentQty = 0;
+            let invId = null;
+            if (invRows.length > 0) {
+                currentQty = Number(invRows[0].quantity);
+                invId = invRows[0].id;
+            }
+
+            const delta = qty - currentQty;
+            let movementType = 'ADJUSTMENT';
+            let movementQty = 0;
+
+            if (delta > 0) {
+                movementType = 'IN';
+                movementQty = delta;
+            } else if (delta < 0) {
+                movementType = 'OUT';
+                movementQty = Math.abs(delta);
+            }
+
+            // Update/Insert inventory record
+            if (invId) {
+                await conn.query('UPDATE INVENTORY SET quantity = ? WHERE id = ?', [qty, invId]);
+            } else {
+                await conn.query('INSERT INTO INVENTORY (product_id, location_id, quantity) VALUES (?, ?, ?)', [productId, locationId, qty]);
+            }
+
+            // Log stock movement
+            if (movementQty > 0 || movementType === 'ADJUSTMENT') {
+                const userId = req.user?.id || null;
+                await conn.query(
+                    `INSERT INTO STOCK_MOVEMENTS (product_id, location_id, type, quantity, reference_type, performed_by)
+                     VALUES (?, ?, ?, ?, 'EXCEL_ADJUSTMENT', ?)`,
+                    [productId, locationId, movementType, movementQty, userId]
+                );
+            }
+
+            successCount++;
+        }
+
+        await conn.commit();
+
+        // Log central audit trail for the bulk import action
+        await logToCentral(
+            req.tenant.company_id,
+            req.user.userId,
+            req.user.email,
+            'IMPORT_INVENTORY',
+            'inventory',
+            null,
+            null,
+            { successCount, errorCount }
+        );
+
+        res.json({
+            message: `Inventory adjustments completed. Succeeded: ${successCount}, Failed: ${errorCount}`,
+            successCount,
+            errorCount,
+            errors
+        });
+
+    } catch (err) {
+        if (conn) {
+            try { await conn.rollback(); } catch (rb) {}
+        }
+        console.error('[IMPORT] Inventory import transaction failed:', err);
+        res.status(500).json({ message: 'Internal server error processing inventory spreadsheet' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+

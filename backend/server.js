@@ -28,6 +28,7 @@ app.use('/api/locations', require('./routes/locations'));
 app.use('/api/stock-movements', require('./routes/stock-movements'));
 app.use('/api/purchase-orders', require('./routes/purchase-orders'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/sales', require('./routes/sales'));
 
 // Health Check Endpoint for Cron-job
 app.get('/api/health', (req, res) => {

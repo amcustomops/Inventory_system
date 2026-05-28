@@ -16,6 +16,23 @@ const centralPool = mariadb.createPool({
   }
 });
 
+// Run a quick schema check/migration for central platform database on startup
+(async () => {
+    let conn;
+    try {
+        conn = await centralPool.getConnection();
+        const columns = await conn.query("SHOW COLUMNS FROM companies LIKE 'ai_enabled'");
+        if (columns.length === 0) {
+            await conn.query("ALTER TABLE companies ADD COLUMN ai_enabled BOOLEAN DEFAULT TRUE");
+            console.log('[DB Master] Migrated central DB: Added ai_enabled column to companies table.');
+        }
+    } catch (err) {
+        console.error('[DB Master] Failed to check/migrate central DB schema:', err);
+    } finally {
+        if (conn) conn.release();
+    }
+})();
+
 // A wrapper object that acts as a proxy for the pool
 const poolWrapper = {
     // Return connection from active tenant pool if available; otherwise fallback to central DB

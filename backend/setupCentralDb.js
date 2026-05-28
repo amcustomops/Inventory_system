@@ -28,6 +28,7 @@ async function setupCentral() {
                 tenant_id VARCHAR(100) UNIQUE NOT NULL,
                 db_name VARCHAR(100) UNIQUE NOT NULL,
                 status ENUM('ACTIVE', 'SUSPENDED', 'INACTIVE') DEFAULT 'ACTIVE',
+                ai_enabled BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB;

@@ -35,7 +35,7 @@ async function resolveTenant(req, res, next) {
     try {
         conn = await centralPool.centralPool.getConnection(); // Use centralPool directly to avoid interceptor loop
         const rows = await conn.query(
-            'SELECT id as company_id, name, tenant_id, db_name, status FROM companies WHERE tenant_id = ?',
+            'SELECT id as company_id, name, tenant_id, db_name, status, ai_enabled FROM companies WHERE tenant_id = ?',
             [cleanTenantId]
         );
 
@@ -43,7 +43,11 @@ async function resolveTenant(req, res, next) {
             return res.status(404).json({ error: `Tenant workspace '${cleanTenantId}' not found` });
         }
 
-        const tenant = rows[0];
+        const tenant = {
+            ...rows[0],
+            ai_enabled: rows[0].ai_enabled === 1 || rows[0].ai_enabled === true || rows[0].ai_enabled === null || rows[0].ai_enabled === undefined
+        };
+
         if (tenant.status !== 'ACTIVE') {
             return res.status(403).json({ error: `Tenant workspace is currently ${tenant.status.toLowerCase()}` });
         }
@@ -79,5 +83,13 @@ async function setupTenantDb(req, res, next) {
         return res.status(500).json({ error: 'Database connection failed' });
     }
 }
+
+const clearTenantCache = (tenantId) => {
+    if (tenantId) {
+        tenantCache.delete(tenantId.toString().toLowerCase().trim());
+    }
+};
+
+resolveTenant.clearTenantCache = clearTenantCache;
 
 module.exports = resolveTenant;

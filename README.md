@@ -343,16 +343,23 @@ All API requests (except platform admin logins and health checks) are tenant-sco
 - **`DELETE /api/products/:id`**: *`[RBAC: owner, manager]`* Remove a product from the database catalog.
 - **`POST /api/products/import`**: *`[RBAC: owner, manager]`* Upload an Excel/CSV catalog file. Parses headers, resolves categories/suppliers on-the-fly, validates SKUs, and runs transactional batch inserts, returning individual row warnings for duplicates.
 
-### 5. Warehouse & Stock Tracking (`/api/inventory` & `/api/stock-movements`)
+### 5. Suppliers Management (`/api/suppliers`)
+- **`GET /api/suppliers`**: Retrieve all suppliers in the tenant database.
+- **`POST /api/suppliers`**: *`[RBAC: owner, manager]`* Create a new supplier. Requires `{ name }` (email, phone, address optional).
+- **`PUT /api/suppliers/:id`**: *`[RBAC: owner, manager]`* Update supplier details.
+- **`DELETE /api/suppliers/:id`**: *`[RBAC: owner, manager]`* Delete a supplier. Fails if supplier is referenced by existing products or purchase orders.
+- **`POST /api/suppliers/import`**: *`[RBAC: owner, manager]`* Bulk Excel/CSV uploader for suppliers. Matches name case-insensitively to merge new details (email, phone, address) onto pre-existing cards or create new records.
+
+### 6. Warehouse & Stock Tracking (`/api/inventory` & `/api/stock-movements`)
 - **`GET /api/inventory`**: Displays location-specific quantities of all products (shops vs. warehouses).
 - **`GET /api/stock-movements`**: Complete audit logs of all physical stock movements.
 - **`POST /api/stock-movements`**: *`[RBAC: owner, manager, warehouse]`* Record a new stock transaction. Accepts `{ product_id, location_id, type ('IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT'), quantity, reference }`. Updates the stock table atomically.
 
-### 6. B2B Purchase Orders (`/api/purchase-orders`)
+### 7. B2B Purchase Orders (`/api/purchase-orders`)
 - **`GET /api/purchase-orders`**: Retrieve B2B order lists.
 - **`POST /api/purchase-orders`**: *`[RBAC: owner, manager]`* Generate a Purchase Order and automatically email a responsive item details list to the supplier's address.
 
-### 7. Predictive ML Analytics (`/api/analytics`)
+### 8. Predictive ML Analytics (`/api/analytics`)
 - **`GET /api/analytics/dashboard`**: Overall dashboard telemetry (Totals, pending logs, low-stock metrics).
 - **`GET /api/analytics/predictions/:product_id`**: Stock depletion rate, stock-out ETA (days remaining), and Economic Order Quantity (EOQ).
 - **`GET /api/analytics/forecast/:product_id`**: Demand time-series forecast (FastAPI Holt-Winters).

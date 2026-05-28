@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Package, Warehouse, ShoppingCart, LogOut, Users, Menu, X, Clock } from 'lucide-react';
+import { LayoutDashboard, Package, Warehouse, ShoppingCart, LogOut, Users, Menu, X, Clock, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api';
 
@@ -91,6 +91,7 @@ const Layout = () => {
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Products', path: '/products', icon: Package },
         { name: 'Inventory', path: '/inventory', icon: Warehouse },
+        { name: 'Sales', path: '/sales', icon: TrendingUp },
         { name: 'Purchase Orders', path: '/purchase-orders', icon: ShoppingCart },
     ];
 

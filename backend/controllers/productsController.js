@@ -1,5 +1,6 @@
 const pool = require('../db');
 const xlsx = require('xlsx');
+const { logToCentral } = require('../utils/auditLogger');
 
 exports.getAllProducts = async (req, res) => {
     let conn;
@@ -218,6 +219,19 @@ exports.importProducts = async (req, res) => {
         }
 
         await conn.commit();
+
+        // Log central audit trail
+        await logToCentral(
+            req.tenant.company_id,
+            req.user.userId,
+            req.user.email,
+            'IMPORT_PRODUCTS',
+            'products',
+            null,
+            null,
+            { successCount, errorCount }
+        );
+
         res.json({
             message: `Catalog import complete. Succeeded: ${successCount}, Failed: ${errorCount}`,
             successCount,

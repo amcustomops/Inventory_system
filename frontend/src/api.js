@@ -26,6 +26,11 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            // Bypass logout redirect if AI features are disabled for the tenant
+            if (error.response.status === 403 && error.response.data && error.response.data.ai_disabled) {
+                return Promise.reject(error);
+            }
+
             const isAuthRequest = error.config && (
                 error.config.url.endsWith('/auth/login') ||
                 error.config.url.endsWith('/auth/admin-login') ||

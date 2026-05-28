@@ -1,5 +1,6 @@
 const centralPool = require('../db');
 const onboardingService = require('../services/onboardingService');
+const tenantResolver = require('../middlewares/tenantResolver');
 
 function safeParseJson(val) {
     if (!val) return null;
@@ -56,7 +57,7 @@ exports.getTenants = async (req, res) => {
     try {
         conn = await centralPool.centralPool.getConnection();
         const rows = await conn.query(`
-            SELECT c.id, c.name, c.tenant_id, c.db_name, c.status, c.created_at, p.name as plan_name, s.status as sub_status 
+            SELECT c.id, c.name, c.tenant_id, c.db_name, c.status, c.ai_enabled, c.created_at, p.name as plan_name, s.status as sub_status 
             FROM companies c
             LEFT JOIN subscriptions s ON c.id = s.company_id
             LEFT JOIN plans p ON s.plan_id = p.id
@@ -66,6 +67,7 @@ exports.getTenants = async (req, res) => {
         const formatted = rows.map(r => ({
             ...r,
             id: r.id.toString(),
+            ai_enabled: r.ai_enabled === 1 || r.ai_enabled === true || r.ai_enabled === null || r.ai_enabled === undefined,
             created_at: r.created_at
         }));
         res.json(formatted);
@@ -119,18 +121,71 @@ exports.toggleTenantStatus = async (req, res) => {
         conn = await centralPool.centralPool.getConnection();
         
         // Double check if tenant exists
-        const check = await conn.query('SELECT id FROM companies WHERE id = ?', [id]);
+        const check = await conn.query('SELECT id, tenant_id FROM companies WHERE id = ?', [id]);
         if (check.length === 0) {
             return res.status(404).json({ message: 'Tenant company not found' });
         }
 
+        const company = check[0];
         await conn.query('UPDATE companies SET status = ? WHERE id = ?', [status, id]);
         
-        // Return updated list format
+        // Clear cached tenant meta so resolver updates immediately
+        tenantResolver.clearTenantCache(company.tenant_id);
+
         res.json({ message: `Tenant status successfully updated to ${status.toLowerCase()}` });
     } catch (err) {
         console.error('[Admin API] Error toggling status:', err);
         res.status(500).json({ message: 'Error updating tenant status' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+/**
+ * Update tenant AI status (Enabled / Disabled)
+ */
+exports.toggleTenantAi = async (req, res) => {
+    const { id } = req.params;
+    const { aiEnabled } = req.body; // true or false
+
+    if (aiEnabled === undefined) {
+        return res.status(400).json({ message: 'Missing aiEnabled parameter' });
+    }
+
+    let conn;
+    try {
+        conn = await centralPool.centralPool.getConnection();
+        
+        // Double check if tenant exists
+        const check = await conn.query('SELECT id, tenant_id FROM companies WHERE id = ?', [id]);
+        if (check.length === 0) {
+            return res.status(404).json({ message: 'Tenant company not found' });
+        }
+
+        const company = check[0];
+        const dbValue = aiEnabled ? 1 : 0;
+        await conn.query('UPDATE companies SET ai_enabled = ? WHERE id = ?', [dbValue, id]);
+
+        // Clear cached tenant meta so resolver updates immediately
+        tenantResolver.clearTenantCache(company.tenant_id);
+
+        // Log to central audit trail
+        const { logToCentral } = require('../utils/auditLogger');
+        await logToCentral(
+            id,
+            req.user.userId,
+            req.user.email,
+            aiEnabled ? 'ENABLE_AI_FEATURES' : 'DISABLE_AI_FEATURES',
+            'companies',
+            id,
+            { ai_enabled: !aiEnabled },
+            { ai_enabled: aiEnabled }
+        );
+        
+        res.json({ message: `AI features successfully ${aiEnabled ? 'enabled' : 'disabled'} for ${company.tenant_id}` });
+    } catch (err) {
+        console.error('[Admin API] Error toggling tenant AI:', err);
+        res.status(500).json({ message: 'Error updating tenant AI status' });
     } finally {
         if (conn) conn.release();
     }

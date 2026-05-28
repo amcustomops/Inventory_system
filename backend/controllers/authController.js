@@ -179,7 +179,8 @@ exports.login = async (req, res) => {
                 email: user.email,
                 role: user.role_name,
                 tenantId: req.tenant.tenant_id,
-                permissions: mergedPermissions
+                permissions: mergedPermissions,
+                aiEnabled: req.tenant.ai_enabled !== false
             }
         });
 

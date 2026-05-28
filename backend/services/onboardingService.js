@@ -59,6 +59,10 @@ class OnboardingService {
             // 5. Initialize the database schema and seed standard data
             await this.initializeTenantDatabase(dbName, ownerName, ownerEmail, password);
 
+            // Seed dummy products, locations, and inventory for the new tenant workspace
+            const seedDummyData = require('../seedDummyData');
+            await seedDummyData(cleanTenantId);
+
             // 6. Complete activation status
             await centralConn.query('UPDATE companies SET status = ? WHERE id = ?', ['ACTIVE', companyId]);
             await centralConn.commit();

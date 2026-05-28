@@ -11,6 +11,7 @@ router.get('/metrics', adminController.getPlatformMetrics);
 router.get('/tenants', adminController.getTenants);
 router.post('/tenants', adminController.createTenant);
 router.put('/tenants/:id/status', adminController.toggleTenantStatus);
+router.put('/tenants/:id/ai', adminController.toggleTenantAi);
 router.get('/logs', adminController.getPlatformLogs);
 
 module.exports = router;

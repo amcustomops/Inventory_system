@@ -53,5 +53,12 @@ const requirePermission = (permission) => {
     };
 };
 
-module.exports = { authenticateToken, authorizeRole, requirePermission };
+const checkAiEnabled = (req, res, next) => {
+    if (req.tenant && req.tenant.ai_enabled === false) {
+        return res.status(403).json({ error: 'AI features are disabled for this tenant', ai_disabled: true });
+    }
+    next();
+};
+
+module.exports = { authenticateToken, authorizeRole, requirePermission, checkAiEnabled };
 

@@ -12,6 +12,8 @@ import Users from './pages/Users';
 import AdminLogin from './pages/AdminLogin';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './pages/AdminDashboard';
+import Sales from './pages/Sales';
+
 
 // Create a component to handle protected routes using context
 const ProtectedRoute = ({ children }) => {
@@ -46,6 +48,7 @@ function App() {
             <Route path="purchase-orders" element={<PurchaseOrders />} />
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="users" element={<Users />} />
+            <Route path="sales" element={<Sales />} />
           </Route>
         </Routes>
       </BrowserRouter>

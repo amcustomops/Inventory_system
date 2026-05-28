@@ -71,6 +71,22 @@ function AdminDashboard() {
         }
     };
 
+    // Toggle tenant AI status between enabled and disabled
+    const handleToggleAi = async (companyId, currentAiStatus) => {
+        setActionLoadingId(`ai-${companyId}`);
+        const nextAiStatus = !currentAiStatus;
+        try {
+            await api.put(`/admin/tenants/${companyId}/ai`, { aiEnabled: nextAiStatus });
+            // Reload
+            await loadData();
+        } catch (err) {
+            console.error('[Admin Dashboard] AI update failed:', err);
+            alert(err.response?.data?.message || 'Failed to update tenant AI status');
+        } finally {
+            setActionLoadingId(null);
+        }
+    };
+
     // Handle onboarding form submit
     const handleFormSubmit = async (e) => {
         e.preventDefault();
@@ -200,6 +216,7 @@ function AdminDashboard() {
                                     <th className="px-6 py-4">Database</th>
                                     <th className="px-6 py-4">Pricing Plan</th>
                                     <th className="px-6 py-4">Subscription</th>
+                                    <th className="px-6 py-4 text-center">AI Features</th>
                                     <th className="px-6 py-4 text-center">Status</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
@@ -222,28 +239,52 @@ function AdminDashboard() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${t.ai_enabled ? 'bg-indigo-600/10 border border-indigo-500/20 text-indigo-400' : 'bg-slate-600/10 border border-slate-500/20 text-slate-450'}`}>
+                                                {t.ai_enabled ? 'Enabled' : 'Disabled'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${t.status === 'ACTIVE' ? 'bg-emerald-600/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-600/10 border border-red-500/20 text-red-400'}`}>
                                                 {t.status}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button 
-                                                disabled={actionLoadingId === t.id}
-                                                onClick={() => handleToggleStatus(t.id, t.status)}
-                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                                    t.status === 'ACTIVE' 
-                                                    ? 'bg-red-950/20 hover:bg-red-950/50 border border-red-800/40 text-red-400'
-                                                    : 'bg-emerald-950/20 hover:bg-emerald-950/50 border border-emerald-800/40 text-emerald-400'
-                                                }`}
-                                            >
-                                                {actionLoadingId === t.id ? (
-                                                    <Loader className="w-3.5 h-3.5 animate-spin" />
-                                                ) : t.status === 'ACTIVE' ? (
-                                                    'Suspend Access'
-                                                ) : (
-                                                    'Activate Workspace'
-                                                )}
-                                            </button>
+                                            <div className="flex justify-end items-center space-x-2">
+                                                <button 
+                                                    disabled={actionLoadingId === t.id || actionLoadingId === `ai-${t.id}`}
+                                                    onClick={() => handleToggleAi(t.id, t.ai_enabled)}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                        t.ai_enabled 
+                                                        ? 'bg-slate-800 hover:bg-slate-700 border border-slate-700/40 text-slate-300'
+                                                        : 'bg-indigo-950/20 hover:bg-indigo-950/50 border border-indigo-800/40 text-indigo-400'
+                                                    }`}
+                                                >
+                                                    {actionLoadingId === `ai-${t.id}` ? (
+                                                        <Loader className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : t.ai_enabled ? (
+                                                        'Disable AI'
+                                                    ) : (
+                                                        'Enable AI'
+                                                    )}
+                                                </button>
+                                                <button 
+                                                    disabled={actionLoadingId === t.id || actionLoadingId === `ai-${t.id}`}
+                                                    onClick={() => handleToggleStatus(t.id, t.status)}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                                        t.status === 'ACTIVE' 
+                                                        ? 'bg-red-950/20 hover:bg-red-950/50 border border-red-800/40 text-red-400'
+                                                        : 'bg-emerald-950/20 hover:bg-emerald-950/50 border border-emerald-800/40 text-emerald-400'
+                                                    }`}
+                                                >
+                                                    {actionLoadingId === t.id ? (
+                                                        <Loader className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : t.status === 'ACTIVE' ? (
+                                                        'Suspend Access'
+                                                    ) : (
+                                                        'Activate Workspace'
+                                                    )}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
